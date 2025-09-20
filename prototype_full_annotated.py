@@ -1,111 +1,124 @@
 import streamlit as st
 import pandas as pd
-import time
 import plotly.express as px
 from PIL import Image
 
-st.set_page_config(page_title="eDNA Biodiversity Explorer", layout="wide")
-st.title("🌱 AI-powered eDNA Taxonomy & Biodiversity Dashboard")
+# ------------------------------
+# Page config
+# ------------------------------
+st.set_page_config(
+    page_title="AI eDNA Dashboard",
+    layout="wide",
+    page_icon="🧬"
+)
 
-# -------------------
-# Section 0: Show Images (Professional visuals)
-# -------------------
-st.subheader("Project Overview Images")
-st.image("flowchart.png", caption="System Architecture", use_container_width=True)
-st.image("dashboard.png", caption="Dashboard Mockup", use_container_width=True)
-st.image("ai_internals.png", caption="AI Pipeline Internals", use_container_width=True)
-st.image("storyboard.png", caption="Researcher Journey Storyboard", use_container_width=True)
-st.image("infographic.png", caption="Project Summary Infographic", use_container_width=True)
+st.title("🌊 AI-powered eDNA Biodiversity Dashboard")
+st.markdown("Analyze environmental DNA sequences and predict species with AI.")
 
-st.markdown("---")  # horizontal line
+# ------------------------------
+# Sample dataset with annotations
+# ------------------------------
+data = {
+    "SampleID": ["S1", "S2", "S3", "S4", "S5"],
+    "eDNA_Sequence": [
+        "ATCGTACGATCG",
+        "GCTAGCTAGCTA",
+        "TTAGGCATCGAT",
+        "CGATCGTACGTA",
+        "ATGCGTACGTAG"
+    ],
+    "PredictedSpecies": [
+        "Species A",
+        "Species B",
+        "Species C",
+        "Species D",
+        "Species E"
+    ],
+    "Annotation": [
+        "GeneX: Present, GeneY: Absent",
+        "GeneX: Absent, GeneY: Present",
+        "GeneX: Present, GeneY: Present",
+        "GeneX: Absent, GeneY: Absent",
+        "GeneX: Present, GeneY: Partial"
+    ]
+}
 
-# -------------------
-# Step 1: Upload File
-# -------------------
-uploaded_file = st.file_uploader("Upload eDNA file (CSV/FASTQ)", type=["csv", "fastq"])
-if uploaded_file:
-    st.success("File uploaded successfully!")
+df = pd.DataFrame(data)
 
-    # Read CSV
-    df = pd.read_csv(uploaded_file)
+# ------------------------------
+# Sidebar filter
+# ------------------------------
+st.sidebar.header("Filters")
+selected_species = st.sidebar.multiselect(
+    "Select Species to View",
+    options=df["PredictedSpecies"].unique(),
+    default=df["PredictedSpecies"].unique()
+)
 
-    # Show uploaded data
-    st.subheader("Uploaded Data Sample")
-    st.dataframe(df.head())
+filtered_df = df[df["PredictedSpecies"].isin(selected_species)]
 
-    # Show Predicted Species + Annotation
-    if "PredictedSpecies" in df.columns and "Annotation" in df.columns:
-        st.subheader("Predicted Species & Annotation")
-        st.dataframe(df[["SampleID", "PredictedSpecies", "Annotation"]])
+# ------------------------------
+# Data table with annotations
+# ------------------------------
+st.subheader("Predicted Species & Annotations")
+st.dataframe(filtered_df[["SampleID", "PredictedSpecies", "eDNA_Sequence", "Annotation"]])
 
-    # -------------------
-    # Step 2: Simulate Pipeline
-    # -------------------
-    st.subheader("Processing Pipeline")
-    steps = ["Preprocessing Reads", "Encoding Features", "Clustering Taxa",
-             "Mapping Taxonomy", "Estimating Abundance"]
+# ------------------------------
+# Interactive Dashboard Layout
+# ------------------------------
+st.subheader("Dashboard")
 
-    progress = st.progress(0)
-    status_text = st.empty()
-    for i, step in enumerate(steps):
-        status_text.text(f"{step} ...")
-        time.sleep(1)  # simulate processing time
-        progress.progress((i+1)/len(steps))
-    st.success("Processing Complete ✅")
+col1, col2 = st.columns(2)
 
-    # -------------------
-    # Step 3: Display Dashboard
-    # -------------------
-    st.subheader("Results Dashboard")
+# Left column: species chart
+with col1:
+    species_count = filtered_df["PredictedSpecies"].value_counts().reset_index()
+    species_count.columns = ["Species", "Count"]
+    fig_species = px.bar(
+        species_count,
+        x="Species",
+        y="Count",
+        color="Species",
+        title="Number of Samples per Species"
+    )
+    st.plotly_chart(fig_species, use_container_width=True)
 
-    # KPI Cards
-    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    kpi1.metric("Samples Processed", len(df))
-    kpi2.metric("Taxa Identified", df["PredictedSpecies"].nunique())
-    kpi3.metric("Novel Taxa %", "8.5%")
-    kpi4.metric("Avg Turnaround", "4.2 hrs")
-
-    # Abundance Bar Chart with Annotations
-    if "PredictedSpecies" in df.columns and "Annotation" in df.columns:
-        data_bar = df.groupby("PredictedSpecies").size().reset_index(name="Count")
-        data_bar = data_bar.merge(df[["PredictedSpecies", "Annotation"]].drop_duplicates(),
-                                  on="PredictedSpecies")
-        fig_bar = px.bar(data_bar, x="PredictedSpecies", y="Count", text="Annotation",
-                         title="Predicted Species Abundance with Annotation")
-        st.plotly_chart(fig_bar, use_container_width=True)
-
-        # Pie chart with Annotations
-        fig_pie = px.pie(data_bar, values="Count", names="PredictedSpecies",
-                         hover_data=["Annotation"], title="Predicted Species Distribution")
-        st.plotly_chart(fig_pie, use_container_width=True)
-
-    # Taxonomy Sunburst (mocked)
-    data_sunburst = pd.DataFrame({
-        "Kingdom": ["Animalia", "Animalia", "Animalia", "Fungi"],
-        "Phylum": ["Chordata", "Arthropoda", "Mollusca", "Ascomycota"],
-        "Count": [120, 90, 45, 60]
+# Right column: gene annotation chart
+with col2:
+    gene_summary = pd.DataFrame({
+        "Gene": ["GeneX Present", "GeneX Absent", "GeneY Present", "GeneY Absent"],
+        "Count": [
+            filtered_df["Annotation"].str.contains("GeneX: Present").sum(),
+            filtered_df["Annotation"].str.contains("GeneX: Absent").sum(),
+            filtered_df["Annotation"].str.contains("GeneY: Present").sum(),
+            filtered_df["Annotation"].str.contains("GeneY: Absent").sum()
+        ]
     })
-    fig_sunburst = px.sunburst(data_sunburst, path=["Kingdom", "Phylum"], values="Count",
-                               title="Taxonomic Distribution")
-    st.plotly_chart(fig_sunburst, use_container_width=True)
+    fig_genes = px.pie(
+        gene_summary,
+        names="Gene",
+        values="Count",
+        title="Gene Annotation Distribution"
+    )
+    st.plotly_chart(fig_genes, use_container_width=True)
 
-    # Sample Locations Map (mocked)
-    st.subheader("Sample Locations")
-    map_data = pd.DataFrame({
-        "lat": [12.9716, 13.0827, 15.2993],
-        "lon": [77.5946, 80.2707, 74.1240],
-        "Sample": ["SMP_01", "SMP_02", "SMP_03"]
-    })
-    st.map(map_data)
+# ------------------------------
+# Images Section
+# ------------------------------
+st.subheader("System Architecture & Dashboard Preview")
 
-    # -------------------
-    # Step 4: Export Results
-    # -------------------
-    st.download_button("Download Results (CSV)", df.to_csv(index=False),
-                       file_name="results.csv")
+col3, col4 = st.columns(2)
 
-# -------------------
-# Footer / Closing Impact
-# -------------------
-st.markdown("---")
+with col3:
+    try:
+        flowchart = Image.open("flowchart.png")
+        st.image(flowchart, caption="System Architecture", use_container_width=True)
+    except:
+        st.warning("flowchart.png not found. Upload it to GitHub!")
 
+with col4:
+    try:
+        dashboard_img = Image.open("dashboard.png")
+        st.image(dashboard_img, caption="Dashboard Preview", use_container_width=True)
+    except:
+        st.warning("dashboard.png not found. Upload it to GitHub!")
