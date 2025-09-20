@@ -1,0 +1,11 @@
+SampleID,Sequence,PredictedSpecies,Annotation
+SMP_01,ATGCGTACGTAGCTAGCTAG,Salmo_salar,Fish - Salmon
+SMP_02,CGTAGCTAGCTAGGCTAGCA,Artemia_franciscana,Brine shrimp
+SMP_03,TTGACGTAGCTAGCTAGCTA,Danio_rerio,Zebrafish
+SMP_04,GCTAGCTAGCTAGCTAGCTA,Daphnia_magna,Water flea
+SMP_05,ATGCTAGCTAGCTAGCTAGC,Oncorhynchus_mykiss,Rainbow trout
+SMP_06,TAGCTAGCTAGGCTAGCTAG,Chironomus_riparius,Midge larva
+SMP_07,CGTAGCTAGCTAGCTAGCTA,Hirudo_verbana,Leech
+SMP_08,ATGCGTAGCTAGCTAGCTAG,Fundulus_heteroclitus,Mummichog
+SMP_09,TGCTAGCTAGCTAGCTAGCA,Macrobrachium_rosenbergii,River prawn
+SMP_10,CGATGCTAGCTAGCTAGCTA,Carassius_auratus,Goldfish
